@@ -81,7 +81,7 @@ public class Facial_Expression implements SerialPortEventListener {
 		}
 	} 
 	
-	public static void handleExpression(Pointer eEvent, Pointer eState, Facial_Expression main) {
+	public static int handleExpression(Pointer eEvent, Pointer eState, Facial_Expression main) {
 		try {
 			Edk.INSTANCE.IEE_EmoEngineEventGetEmoState(eEvent, eState); // Copies an EmoState returned with a IEE_EmoStateUpdate event to memory
 			//Test for different facial events after this command ^
@@ -104,10 +104,12 @@ public class Facial_Expression implements SerialPortEventListener {
 				Edk.INSTANCE.IEE_EngineDisconnect(); //This has to be called before closing program
 				Edk.INSTANCE.IEE_EmoStateFree(eState); //Free up memory
 				Edk.INSTANCE.IEE_EmoEngineEventFree(eEvent);
+				return 0;
 			} else {
 				System.out.println("Expression not recognized");
 			}
 		} catch (Exception e) { }
+		return 1;
 	}
 	
 	public static void main(String[] args) {
@@ -167,7 +169,9 @@ public class Facial_Expression implements SerialPortEventListener {
 								//Edk.INSTANCE.IEE_EmoEngineEventGetUserId(eEvent, userID);
 								if(eventType == Edk.IEE_Event_t.IEE_EmoStateUpdated.ToInt()){ //Check if EmoState udated
 									//New EmoState from user
-									handleExpression(eEvent, eState, main);
+									if (handleExpression(eEvent, eState, main) == 0) {
+										break;
+									}
 									
 								} else {
 									System.out.println("EmoState didn't update");
