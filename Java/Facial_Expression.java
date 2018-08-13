@@ -81,6 +81,35 @@ public class Facial_Expression implements SerialPortEventListener {
 		}
 	} 
 	
+	public static void handleExpression(Pointer eEvent, Pointer eState, Facial_Expression main) {
+		try {
+			Edk.INSTANCE.IEE_EmoEngineEventGetEmoState(eEvent, eState); // Copies an EmoState returned with a IEE_EmoStateUpdate event to memory
+			//Test for different facial events after this command ^
+			
+			if(EmoState.INSTANCE.IS_FacialExpressionIsBlink(eState) == 1) {
+				System.out.println("Blink");
+				main.output.write("1".getBytes());
+			} else if(EmoState.INSTANCE.IS_FacialExpressionIsRightWink(eState) == 1) {
+				System.out.println("Right Wink");
+				main.output.write("2".getBytes());
+			} else if(EmoState.INSTANCE.IS_FacialExpressionIsLeftWink(eState) == 1) {
+				System.out.println("Left Wink");
+				main.output.write("3".getBytes());
+			} else if(EmoState.INSTANCE.IS_FacialExpressionGetSmileExtent(eState) >= 0.6) {
+				System.out.println("Smile");
+				main.output.write("4".getBytes());
+			} else if(EmoState.INSTANCE.IS_FacialExpressionGetClenchExtent(eState) >= 0.6) {
+				System.out.println("Clench, closing program");
+				System.out.println("Disconnecting from engine and freeing up memory");
+				Edk.INSTANCE.IEE_EngineDisconnect(); //This has to be called before closing program
+				Edk.INSTANCE.IEE_EmoStateFree(eState); //Free up memory
+				Edk.INSTANCE.IEE_EmoEngineEventFree(eEvent);
+			} else {
+				System.out.println("Expression not recognized");
+			}
+		} catch (Exception e) { }
+	}
+	
 	public static void main(String[] args) {
 		//Creation of core objects. IEE_ functions modify or retrieve EmoEngine settings
 		Pointer eEvent = Edk.INSTANCE.IEE_EmoEngineEventCreate(); //Holds an EmoEngine event, returns EmoEngineEventHandle
@@ -138,31 +167,7 @@ public class Facial_Expression implements SerialPortEventListener {
 								//Edk.INSTANCE.IEE_EmoEngineEventGetUserId(eEvent, userID);
 								if(eventType == Edk.IEE_Event_t.IEE_EmoStateUpdated.ToInt()){ //Check if EmoState udated
 									//New EmoState from user
-									Edk.INSTANCE.IEE_EmoEngineEventGetEmoState(eEvent, eState); // Copies an EmoState returned with a IEE_EmoStateUpdate event to memory
-									//Test for different facial events after this command ^
-									
-									if(EmoState.INSTANCE.IS_FacialExpressionIsBlink(eState) == 1) {
-										System.out.println("Blink");
-										main.output.write("1".getBytes());
-									} else if(EmoState.INSTANCE.IS_FacialExpressionIsRightWink(eState) == 1) {
-										System.out.println("Right Wink");
-										main.output.write("2".getBytes());
-									} else if(EmoState.INSTANCE.IS_FacialExpressionIsLeftWink(eState) == 1) {
-										System.out.println("Left Wink");
-										main.output.write("3".getBytes());
-									} else if(EmoState.INSTANCE.IS_FacialExpressionGetSmileExtent(eState) >= 0.6) {
-										System.out.println("Smile");
-										main.output.write("4".getBytes());
-									} else if(EmoState.INSTANCE.IS_FacialExpressionGetClenchExtent(eState) >= 0.6) {
-										System.out.println("Clench, closing program");
-										System.out.println("Disconnecting from engine and freeing up memory");
-										Edk.INSTANCE.IEE_EngineDisconnect(); //This has to be called before closing program
-										Edk.INSTANCE.IEE_EmoStateFree(eState); //Free up memory
-										Edk.INSTANCE.IEE_EmoEngineEventFree(eEvent);
-										break;
-									} else {
-										System.out.println("Expression not recognized");
-									}
+									handleExpression(eEvent, eState, main);
 									
 								} else {
 									System.out.println("EmoState didn't update");
